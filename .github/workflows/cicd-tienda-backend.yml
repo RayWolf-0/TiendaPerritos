@@ -2,7 +2,9 @@ name: CI/CD Tienda Perritos - Backend
 
 on:
   push:
-    branches: [ "**" ]
+    branches:
+      - main
+      - master
     paths:
       - "backend/**"
 
@@ -37,20 +39,17 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
     - name: Desplegar Backend vía SSM
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: tienda-backend
       run: |
         aws ssm send-command \
           --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
           --document-name "AWS-RunShellScript" \
-          --comment "Update Backend con Sudo" \
+          --comment "Update Backend" \
           --parameters '{"commands":[
             "set -e",
-            "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | sudo docker login --username AWS --password-stdin '${ECR_REGISTRY}'",
-            "sudo docker pull '${ECR_REGISTRY}'/'${ECR_REPOSITORY}':latest",
+            "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}",
+            "sudo docker pull ${{ steps.login-ecr.outputs.registry }}/tienda-backend:latest",
             "sudo docker stop tienda-backend || true",
             "sudo docker rm tienda-backend || true",
-            "sudo docker run -d --name tienda-backend -p 3001:3001 '${ECR_REGISTRY}'/'${ECR_REPOSITORY}':latest"
+            "sudo docker run -d --name tienda-backend -p 3001:3001 ${{ steps.login-ecr.outputs.registry }}/tienda-backend:latest"
           ]}' \
           --output text
