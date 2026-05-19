@@ -2,7 +2,7 @@ name: CI/CD Tienda Perritos - Backend
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "**" ] # Correrá en cualquier rama para evitar errores de nombre
     paths:
       - "backend/**"
 
@@ -22,16 +22,14 @@ jobs:
         aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
         aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Login en Amazon ECR (runner)
+    - name: Login en Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build imagen Backend y push a ECR
+    - name: Build y Push Backend
       env:
-        # Usamos el output del login para evitar errores de URL vacía
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        # Aquí escribo el nombre directamente para que no falle si el secret no está
-        ECR_REPOSITORY: tienda-backend 
+        ECR_REPOSITORY: tienda-backend
         IMAGE_TAG: latest
       run: |
         cd backend
@@ -46,7 +44,7 @@ jobs:
         aws ssm send-command \
           --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
           --document-name "AWS-RunShellScript" \
-          --comment "Actualizar tienda-backend desde ECR" \
+          --comment "Update Backend" \
           --parameters '{"commands":[
             "set -e",
             "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin '${ECR_REGISTRY}'",
