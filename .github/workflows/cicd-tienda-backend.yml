@@ -1,55 +1,46 @@
-name: CI/CD Tienda Perritos - Backend
+name: CI/CD Backend
 
 on:
   push:
     branches:
       - main
-      - master
     paths:
       - "backend/**"
 
 jobs:
-  build-push-deploy-backend:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout código
-      uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    - name: Configurar credenciales AWS
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-        aws-region: ${{ secrets.AWS_REGION }}
+      - name: AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Login en Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+      - name: Login ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build y Push Backend
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: tienda-backend
-        IMAGE_TAG: latest
-      run: |
-        cd backend
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - name: Build & Push
+        run: |
+          cd backend
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/tienda-backend:latest .
+          docker push ${{ steps.login-ecr.outputs.registry }}/tienda-backend:latest
 
-    - name: Desplegar Backend vía SSM
-      run: |
-        aws ssm send-command \
-          --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
-          --document-name "AWS-RunShellScript" \
-          --comment "Update Backend" \
-          --parameters '{"commands":[
-            "set -e",
-            "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}",
-            "sudo docker pull ${{ steps.login-ecr.outputs.registry }}/tienda-backend:latest",
-            "sudo docker stop tienda-backend || true",
-            "sudo docker rm tienda-backend || true",
-            "sudo docker run -d --name tienda-backend -p 3001:3001 ${{ steps.login-ecr.outputs.registry }}/tienda-backend:latest"
-          ]}' \
-          --output text
+      - name: Deploy SSM
+        run: |
+          aws ssm send-command \
+            --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
+            --document-name "AWS-RunShellScript" \
+            --parameters '{"commands":[
+              "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | sudo docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry }}",
+              "sudo docker pull ${{ steps.login-ecr.outputs.registry }}/tienda-backend:latest",
+              "sudo docker stop tienda-backend || true",
+              "sudo docker rm tienda-backend || true",
+              "sudo docker run -d --name tienda-backend -p 3001:3001 ${{ steps.login-ecr.outputs.registry }}/tienda-backend:latest"
+            ]}'
