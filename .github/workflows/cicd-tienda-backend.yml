@@ -2,7 +2,7 @@ name: CI/CD Tienda Perritos - Backend
 
 on:
   push:
-    branches: [ "**" ] # Correrá en cualquier rama para evitar errores de nombre
+    branches: [ "**" ]
     paths:
       - "backend/**"
 
@@ -44,13 +44,13 @@ jobs:
         aws ssm send-command \
           --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
           --document-name "AWS-RunShellScript" \
-          --comment "Update Backend" \
+          --comment "Update Backend con Sudo" \
           --parameters '{"commands":[
             "set -e",
-            "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin '${ECR_REGISTRY}'",
-            "docker pull '${ECR_REGISTRY}'/'${ECR_REPOSITORY}':latest",
-            "docker stop tienda-backend || true",
-            "docker rm tienda-backend || true",
-            "docker run -d --name tienda-backend -p 3001:3001 '${ECR_REGISTRY}'/'${ECR_REPOSITORY}':latest"
+            "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | sudo docker login --username AWS --password-stdin '${ECR_REGISTRY}'",
+            "sudo docker pull '${ECR_REGISTRY}'/'${ECR_REPOSITORY}':latest",
+            "sudo docker stop tienda-backend || true",
+            "sudo docker rm tienda-backend || true",
+            "sudo docker run -d --name tienda-backend -p 3001:3001 '${ECR_REGISTRY}'/'${ECR_REPOSITORY}':latest"
           ]}' \
           --output text
