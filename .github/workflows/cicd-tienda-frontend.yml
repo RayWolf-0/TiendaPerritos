@@ -23,16 +23,23 @@ jobs:
         aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Login en Amazon ECR (runner)
+      id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
     - name: Build imagen Frontend y push a ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: tienda-frontend
+        IMAGE_TAG: latest
       run: |
         cd frontend
-        docker build -t tienda-frontend .
-        docker tag tienda-frontend:latest ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
-        docker push ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
     - name: Desplegar Frontend vía SSM
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: tienda-frontend
       run: |
         aws ssm send-command \
           --instance-ids ${{ secrets.EC2_FRONTEND_INSTANCE_ID }} \
@@ -40,10 +47,10 @@ jobs:
           --comment "Actualizar tienda-frontend desde ECR" \
           --parameters '{"commands":[
             "set -e",
-            "aws ecr get-login-password --region '${{ secrets.AWS_REGION }}' | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-            "docker pull ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest",
+            "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin '${ECR_REGISTRY}'",
+            "docker pull '${ECR_REGISTRY}'/'${ECR_REPOSITORY}':latest",
             "docker stop tienda-frontend || true",
             "docker rm tienda-frontend || true",
-            "docker run -d --name tienda-frontend -p 80:80 ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest"
+            "docker run -d --name tienda-frontend -p 80:80 '${ECR_REGISTRY}'/'${ECR_REPOSITORY}':latest"
           ]}' \
           --output text
