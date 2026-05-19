@@ -18,7 +18,7 @@ app.use(express.json());
 
 let pool;
 
-// Inicializar pool de conexiones si cambio
+// Inicializar pool de conexiones si cambio cambio
 async function initDb() {
   try {
     pool = mysql.createPool({
