@@ -7,7 +7,7 @@
 //
 const API_BASE = "/api/productos";
 
-// Ejemplo: const API_BASE = "http://10.0.2.30:3001/api/productos";
+// Ejemplo: const API_BASE = "http://10.0.2.30:3001/api/productos"; si
 
 
 let editandoId = null;
