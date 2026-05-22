@@ -50,6 +50,6 @@ jobs:
                 "sudo docker pull ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}",
                 "sudo docker stop ${{ env.ECR_REPOSITORY }} || true",
                 "sudo docker rm ${{ env.ECR_REPOSITORY }} || true",
-                "sudo docker run -d --name ${{ env.ECR_REPOSITORY }} -p 3001:3001 ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
+                "sudo docker run -d --name ${{ env.ECR_REPOSITORY }} -p 3001:3001 -e DB_HOST=${{ secrets.DB_HOST }} -e DB_USER=${{ secrets.DB_USER }} -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
               ]
             }'
