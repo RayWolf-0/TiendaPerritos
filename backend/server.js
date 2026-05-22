@@ -18,6 +18,8 @@ app.use(express.json());
 
 let pool;
 
+//comentario
+
 // Inicializar pool de conexiones si cambio cambio
 async function initDb() {
   try {
