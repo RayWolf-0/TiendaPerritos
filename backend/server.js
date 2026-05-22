@@ -20,7 +20,7 @@ let pool;
 
 //comentario
 //docker
-
+//ecr
 // Inicializar pool de conexiones si cambio cambio
 async function initDb() {
   try {
