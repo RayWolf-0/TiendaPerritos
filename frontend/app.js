@@ -5,7 +5,7 @@
 // Determinar la URL base de la API según el host
 // frontend/app.js
 // yum
-const API_BASE = "/api/productos";
+const API_BASE = "http://23.23.57.93:3001/api/productos";
 
 // Ejemplo: const API_BASE = "http://10.0.2.30:3001/api/productos"; si cambio
 
