@@ -22,6 +22,7 @@ let pool;
 //docker
 //ecr2
 // Inicializar pool de conexiones si cambio cambio
+//url
 async function initDb() {
   try {
     pool = mysql.createPool({
