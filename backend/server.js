@@ -5,11 +5,12 @@ const mysql = require("mysql2/promise");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// 1. CREDENCIALES ACTUALIZADAS SEGÚN TU CONTENEDOR DOCKER
 const {
-  DB_HOST = "10.0.2.134", // acá colocar la IP Privada EC2 DB
+  DB_HOST = "127.0.0.1", // IP local porque el contenedor comparte la red
   DB_USER = "root",
-  DB_PASSWORD = "admin123",
-  DB_NAME = "tienda_perritos",
+  DB_PASSWORD = "tu_contraseña", // Contraseña exacta de tu comando
+  DB_NAME = "nombre_de_tu_db",   // Base de datos exacta de tu comando
   DB_PORT = 3306,
 } = process.env;
 
@@ -18,11 +19,7 @@ app.use(express.json());
 
 let pool;
 
-//comentario
-//docker
-//ecr2
-// Inicializar pool de conexiones si cambio cambio
-//url
+// Inicializar pool de conexiones y verificar tabla
 async function initDb() {
   try {
     pool = mysql.createPool({
@@ -35,7 +32,19 @@ async function initDb() {
       connectionLimit: 10,
       queueLimit: 0,
     });
-    console.log("Pool de conexiones MySQL inicializado.");
+    
+    // 2. AUTO-CREACIÓN DE LA TABLA (Para evitar errores de base de datos vacía)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS productos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(255) NOT NULL,
+        descripcion TEXT,
+        precio DECIMAL(10, 2) NOT NULL,
+        stock INT NOT NULL
+      )
+    `);
+
+    console.log("Pool de conexiones MySQL inicializado y tabla verificada.");
   } catch (err) {
     console.error("Error al inicializar pool de MySQL:", err);
   }
@@ -142,4 +151,4 @@ app.listen(PORT, async () => {
   console.log(`Servidor backend escuchando en puerto ${PORT}`);
   await initDb();
 });
-"// Sync check" 
+"// Sync check"
